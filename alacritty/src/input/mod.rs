@@ -402,8 +402,8 @@ impl<T: EventListener> Execute<T> for Action {
                 ctx.mark_dirty();
             },
             Action::ClearHistory => ctx.terminal_mut().clear_screen(ClearMode::Saved),
-            Action::WriteHistory => {
-                if let Err(err) = File::create("/tmp/alacritty-scrollback")
+            Action::WriteHistory(file) => {
+                if let Err(err) = File::create(file)
                     .and_then(|mut file| write!(file, "{}", ctx.terminal().grid()))
                 {
                     debug!("Failed to create scrollback file: {err:?}")
