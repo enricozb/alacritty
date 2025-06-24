@@ -1,6 +1,7 @@
 //! Defines the Row type which makes up lines in the grid.
 
 use std::cmp::{max, min};
+use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive};
 use std::{ptr, slice};
 
@@ -293,5 +294,15 @@ impl<T> IndexMut<RangeToInclusive<Column>> for Row<T> {
     fn index_mut(&mut self, index: RangeToInclusive<Column>) -> &mut [T] {
         self.occ = max(self.occ, *index.end + 1);
         &mut self.inner[..=(index.end.0)]
+    }
+}
+
+impl<T: Display> Display for Row<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for c in self.into_iter() {
+            write!(f, "{c}")?;
+        }
+
+        Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
@@ -284,6 +285,12 @@ impl LineLength for grid::Row<Cell> {
         }
 
         length
+    }
+}
+
+impl Display for Cell {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.c)
     }
 }
 

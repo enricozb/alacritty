@@ -1,4 +1,5 @@
 use std::cmp::max;
+use std::fmt::{Display, Formatter};
 use std::mem;
 use std::mem::MaybeUninit;
 use std::ops::{Index, IndexMut};
@@ -246,6 +247,16 @@ impl<T> Storage<T> {
 
         self.inner.rotate_left(self.zero);
         self.zero = 0;
+    }
+}
+
+impl<T: Display> Display for Storage<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for idx in (0..self.len()).rev() {
+            write!(f, "{}", self[idx.into()])?;
+        }
+
+        Ok(())
     }
 }
 
