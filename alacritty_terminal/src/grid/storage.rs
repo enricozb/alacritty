@@ -253,8 +253,8 @@ impl<T> Storage<T> {
 
 impl<T: Display + GridCell> Display for Storage<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for idx in 0..self.len() {
-            write!(f, "{}", self[idx.into()])?;
+        for idx in (0..self.len()).rev() {
+            write!(f, "{}", self[Line(self.visible_lines as i32 - (idx as i32) - 1)])?;
         }
 
         Ok(())
