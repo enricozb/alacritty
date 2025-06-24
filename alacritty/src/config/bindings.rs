@@ -163,6 +163,9 @@ pub enum Action {
     /// Clear the display buffer(s) to remove history.
     ClearHistory,
 
+    /// Write the display buffer and all escape sequences to a file.
+    WriteHistory,
+
     /// Hide the Alacritty window.
     Hide,
 
@@ -252,8 +255,8 @@ pub enum Action {
 }
 
 impl From<&'static str> for Action {
-    fn from(s: &'static str) -> Action {
-        Action::Esc(s.into())
+    fn from(s: &'static str) -> Self {
+        Self::Esc(s.into())
     }
 }
 

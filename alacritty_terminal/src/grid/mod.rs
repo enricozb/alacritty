@@ -441,7 +441,7 @@ impl<T> Grid<T> {
     }
 }
 
-impl<T: Display> Display for Grid<T> {
+impl<T: Display + GridCell> Display for Grid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.raw)
     }

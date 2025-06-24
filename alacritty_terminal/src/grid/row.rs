@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::grid::GridCell;
 use crate::index::Column;
-use crate::term::cell::ResetDiscriminant;
+use crate::term::cell::{Flags, ResetDiscriminant};
 
 /// A row in the grid.
 #[derive(Default, Clone, Debug)]
@@ -297,10 +297,19 @@ impl<T> IndexMut<RangeToInclusive<Column>> for Row<T> {
     }
 }
 
-impl<T: Display> Display for Row<T> {
+impl<T: Display + GridCell> Display for Row<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut last = None;
+
         for c in self.into_iter() {
             write!(f, "{c}")?;
+
+            last = Some(c)
+        }
+
+        // Write a newline only if the last cell doesn't have WRAPLINE set.
+        if !last.map_or(false, |c| c.flags().contains(Flags::WRAPLINE)) {
+            writeln!(f)?;
         }
 
         Ok(())

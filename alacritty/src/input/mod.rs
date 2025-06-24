@@ -10,6 +10,8 @@ use std::cmp::{max, min, Ordering};
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fmt::Debug;
+use std::fs::File;
+use std::io::Write;
 use std::marker::PhantomData;
 use std::mem;
 use std::time::{Duration, Instant};
@@ -400,6 +402,13 @@ impl<T: EventListener> Execute<T> for Action {
                 ctx.mark_dirty();
             },
             Action::ClearHistory => ctx.terminal_mut().clear_screen(ClearMode::Saved),
+            Action::WriteHistory => {
+                if let Err(err) = File::create("/tmp/alacritty-scrollback")
+                    .and_then(|mut file| write!(file, "{}", ctx.terminal().grid()))
+                {
+                    debug!("Failed to create scrollback file: {err:?}")
+                }
+            },
             Action::ClearLogNotice => ctx.pop_message(),
             #[cfg(not(target_os = "macos"))]
             Action::CreateNewWindow => ctx.create_new_window(),

@@ -8,6 +8,7 @@ use std::ops::{Index, IndexMut};
 use serde::{Deserialize, Serialize};
 
 use super::Row;
+use crate::grid::GridCell;
 use crate::index::Line;
 
 /// Maximum number of buffered lines outside of the grid for performance optimization.
@@ -250,9 +251,9 @@ impl<T> Storage<T> {
     }
 }
 
-impl<T: Display> Display for Storage<T> {
+impl<T: Display + GridCell> Display for Storage<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for idx in (0..self.len()).rev() {
+        for idx in 0..self.len() {
             write!(f, "{}", self[idx.into()])?;
         }
 
