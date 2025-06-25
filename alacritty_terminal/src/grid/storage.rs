@@ -8,8 +8,9 @@ use std::ops::{Index, IndexMut};
 use serde::{Deserialize, Serialize};
 
 use super::Row;
-use crate::grid::GridCell;
 use crate::index::Line;
+use crate::term::cell::{Cell, Flags};
+use crate::vte::ansi::{Color, NamedColor, Rgb};
 
 /// Maximum number of buffered lines outside of the grid for performance optimization.
 const MAX_CACHE_SIZE: usize = 1_000;
@@ -251,10 +252,88 @@ impl<T> Storage<T> {
     }
 }
 
-impl<T: Display + GridCell> Display for Storage<T> {
+impl Display for Storage<Cell> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn ansi_color(color: Color, is_fg: bool) -> String {
+            let color_code = match color {
+                Color::Named(named) => {
+                    let normalized = match named {
+                        NamedColor::DimBlack => NamedColor::Black,
+                        NamedColor::DimRed => NamedColor::Red,
+                        NamedColor::DimGreen => NamedColor::Green,
+                        NamedColor::DimYellow => NamedColor::Yellow,
+                        NamedColor::DimBlue => NamedColor::Blue,
+                        NamedColor::DimMagenta => NamedColor::Magenta,
+                        NamedColor::DimCyan => NamedColor::Cyan,
+                        NamedColor::DimWhite => NamedColor::White,
+                        NamedColor::DimForeground => NamedColor::White,
+                        NamedColor::Foreground => NamedColor::White,
+                        NamedColor::Background => NamedColor::Black,
+                        NamedColor::BrightForeground => NamedColor::BrightWhite,
+                        _ => named,
+                    };
+
+                    format!("5;{}", normalized as usize)
+                },
+                Color::Spec(Rgb { r, g, b }) => format!("2;{r};{g};{b}"),
+                Color::Indexed(i) => format!("5;{i}"),
+            };
+
+            let layer_code = if is_fg { 38 } else { 48 };
+
+            format!("\x1b[{layer_code};{color_code}m")
+        }
+
+        fn ansi_flags(flags: Flags) -> String {
+            let mut seq = String::new();
+
+            if flags.contains(Flags::BOLD) {
+                seq.push_str("\x1b[1m");
+            }
+            if flags.contains(Flags::ITALIC) {
+                seq.push_str("\x1b[3m");
+            }
+            if flags.contains(Flags::UNDERLINE) {
+                seq.push_str("\x1b[4m");
+            }
+
+            seq
+        }
+
+        let mut last: Option<&Cell> = None;
+
         for idx in (0..self.len()).rev() {
-            write!(f, "{}", self[Line(self.visible_lines as i32 - (idx as i32) - 1)])?;
+            let row = &self[Line(self.visible_lines as i32 - (idx as i32) - 1)];
+            let mut line = String::new();
+
+            for cell in row.into_iter() {
+                let (show_fg, show_bg, show_flags) = match last {
+                    Some(last) => {
+                        (last.fg != cell.fg, last.bg != cell.bg, last.flags != cell.flags)
+                    },
+                    None => (true, true, true),
+                };
+
+                if show_fg {
+                    line.push_str(&ansi_color(cell.fg, true));
+                }
+                if show_bg {
+                    line.push_str(&ansi_color(cell.bg, false));
+                }
+                if show_flags {
+                    line.push_str(&ansi_flags(cell.flags));
+                }
+                line.push(cell.c);
+
+                last = Some(cell);
+            }
+
+            // Write a newline only if the last cell doesn't have WRAPLINE set.
+            if last.is_some_and(|last| last.flags.contains(Flags::WRAPLINE)) {
+                write!(f, "{}", line)?;
+            } else {
+                writeln!(f, "{}", line.trim())?;
+            }
         }
 
         Ok(())

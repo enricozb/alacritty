@@ -1,7 +1,6 @@
 //! Defines the Row type which makes up lines in the grid.
 
 use std::cmp::{max, min};
-use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive};
 use std::{ptr, slice};
 
@@ -10,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::grid::GridCell;
 use crate::index::Column;
-use crate::term::cell::{Flags, ResetDiscriminant};
+use crate::term::cell::ResetDiscriminant;
 
 /// A row in the grid.
 #[derive(Default, Clone, Debug)]
@@ -294,24 +293,5 @@ impl<T> IndexMut<RangeToInclusive<Column>> for Row<T> {
     fn index_mut(&mut self, index: RangeToInclusive<Column>) -> &mut [T] {
         self.occ = max(self.occ, *index.end + 1);
         &mut self.inner[..=(index.end.0)]
-    }
-}
-
-impl<T: Display + GridCell> Display for Row<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut last = None;
-
-        for c in self.into_iter() {
-            write!(f, "{c}")?;
-
-            last = Some(c)
-        }
-
-        // Write a newline only if the last cell doesn't have WRAPLINE set.
-        if !last.map_or(false, |c| c.flags().contains(Flags::WRAPLINE)) {
-            writeln!(f)?;
-        }
-
-        Ok(())
     }
 }

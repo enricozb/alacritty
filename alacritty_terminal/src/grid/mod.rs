@@ -8,7 +8,7 @@ use std::ops::{Bound, Deref, Index, IndexMut, Range, RangeBounds};
 use serde::{Deserialize, Serialize};
 
 use crate::index::{Column, Line, Point};
-use crate::term::cell::{Flags, ResetDiscriminant};
+use crate::term::cell::{Cell, Flags, ResetDiscriminant};
 use crate::vte::ansi::{CharsetIndex, StandardCharset};
 
 pub mod resize;
@@ -441,7 +441,7 @@ impl<T> Grid<T> {
     }
 }
 
-impl<T: Display + GridCell> Display for Grid<T> {
+impl Display for Grid<Cell> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.raw)
     }
