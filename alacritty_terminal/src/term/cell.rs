@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::grid::{self, GridCell};
 use crate::index::Column;
-use crate::vte::ansi::{Color, Hyperlink as VteHyperlink, NamedColor};
+use crate::vte::ansi::{Color, Hyperlink as VteHyperlink, NamedColor, Rgb};
 
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -290,7 +290,58 @@ impl LineLength for grid::Row<Cell> {
 
 impl Display for Cell {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.c)
+        fn ansi_color(color: Color, is_fg: bool) -> String {
+            let color_code = match color {
+                Color::Named(named) => {
+                    let normalized = match named {
+                        NamedColor::DimBlack => NamedColor::Black,
+                        NamedColor::DimRed => NamedColor::Red,
+                        NamedColor::DimGreen => NamedColor::Green,
+                        NamedColor::DimYellow => NamedColor::Yellow,
+                        NamedColor::DimBlue => NamedColor::Blue,
+                        NamedColor::DimMagenta => NamedColor::Magenta,
+                        NamedColor::DimCyan => NamedColor::Cyan,
+                        NamedColor::DimWhite => NamedColor::White,
+                        NamedColor::DimForeground => NamedColor::White,
+                        NamedColor::Foreground => NamedColor::White,
+                        NamedColor::Background => NamedColor::Black,
+                        NamedColor::BrightForeground => NamedColor::BrightWhite,
+                        _ => named,
+                    };
+
+                    format!("5;{}", normalized as usize)
+                },
+                Color::Spec(Rgb { r, g, b }) => format!("2;{r};{g};{b}"),
+                Color::Indexed(i) => format!("5;{i}"),
+            };
+
+            let layer_code = if is_fg { 38 } else { 48 };
+
+            format!("\x1b[{layer_code};{color_code}m")
+        }
+
+        fn ansi_attrs(flags: Flags) -> String {
+            let mut seq = String::new();
+
+            if flags.contains(Flags::BOLD) {
+                seq.push_str("\x1b[1m");
+            }
+            if flags.contains(Flags::ITALIC) {
+                seq.push_str("\x1b[3m");
+            }
+            if flags.contains(Flags::UNDERLINE) {
+                seq.push_str("\x1b[4m");
+            }
+
+            seq
+        }
+
+        let fg = ansi_color(self.fg, true);
+        let bg = ansi_color(self.bg, false);
+        let attrs = ansi_attrs(self.flags);
+        let reset = "\x1b[0m";
+
+        write!(f, "{fg}{bg}{attrs}{}{reset}", self.c)
     }
 }
 
